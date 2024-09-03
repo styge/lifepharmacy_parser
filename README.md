@@ -33,6 +33,9 @@
 `pip install -r requirements.txt`
 
 ## Запуск
+
+Командой `cd lifepharmacy` перейдите в первую папку проекта
+
 **Находясь в директории проекта запустим скрипт командой:**
 
 `scrapy crawl lifepharmacy -O test_product_data.json`
