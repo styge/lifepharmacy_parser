@@ -14,30 +14,26 @@
 
 ## Установка
 
-Клонируем проект, командой в терминале:
+**Клонируем проект, командой в терминале:**
 
 `git clone https://github.com/styge/lifepharmacy_parser.git && cd lifepharmacy_parser`
 
----
-
-Создаем виртуальную среду (для Python 3.x) командой:
+**Создаем виртуальную среду (для Python 3.x) командой:**
 
 `python -m venv venv`
 
-Активируем виртуальную среду командой:
+**Активируем виртуальную среду командой:**
 - Windows:
 `venv\Scripts\activate`
 
 - MacOS/Linux:
 `source venv/bin/activate`
 
----
-
-В директории проекта установим зависимости, используя `pip` и файл `requirements.txt` командой:
+**В директории проекта установим зависимости, используя `pip` и файл `requirements.txt` командой:**
 `pip install -r requirements.txt`
 
 ## Запуск
-Находясь в директории проекта запустим скрипт командой:
+**Находясь в директории проекта запустим скрипт командой:**
 `scrapy crawl lifepharmacy -O test_product_data.json`
 
 ## Используемые инструменты
