@@ -1,16 +1,10 @@
-import json
-from typing import Any
-
 import scrapy
 from datetime import datetime
-
-from requests import Response
 
 
 class LifepharmacySpider(scrapy.Spider):
     name = "lifepharmacy"
     allowed_domains = ["prodapp.lifepharmacy.com", 'lifepharmacy.com']
-    start_skip = 0
 
     custom_settings = {'DEFAULT_REQUEST_HEADERS': {
         'Sec-Ch-Ua': '"Chromium";v="127", "Not)A;Brand";v="99"',
@@ -23,28 +17,35 @@ class LifepharmacySpider(scrapy.Spider):
                       'Chrome/127.0.6533.100 Safari/537.36',
         'Uuid': '01J6J4C8S86G412DK87GQVYV3D',
         'Channel': 'web',
-        'Latitude': '25.192622',
+        'Latitude': '25.192622'
         }
     }
 
+    categories = ['shampoo', 'whey-protein', 'vitamin-d']
     base_url = ('https://prodapp.lifepharmacy.com/api/web/products?order_by=popularity&type=cols&new_method=true'
-                '&lang=ae-en&take=20&categories=shampoo')
+                '&lang=ae-en&take=20')
 
     def start_requests(self):
-        url = f'{self.base_url}&skip={self.start_skip}'
-        yield scrapy.Request(url=url, callback=self.parse)
+        for category in self.categories:
+            yield scrapy.Request(
+                url=f'{self.base_url}&skip=&categories={category}',
+                callback=self.parse,
+                meta={'category': category, 'start_skip': 0}
+            )
 
-    def parse(self, response: Response, **kwargs: Any) -> Any:
-        data = json.loads(response.text)
-        products = data.get('data', []).get('products', [])
+    def parse(self, response):
+        data = response.json()
+        products = data.get('data', {}).get('products', [])
+        category = response.meta['category']
+        start_skip = response.meta['start_skip']
 
         if products:
-            self.start_skip += 20
-            next_url = f'{self.base_url}&skip={self.start_skip}'
-            yield scrapy.Request(url=next_url, callback=self.parse)
+            start_skip += 20
+            next_url = f'{self.base_url}&skip={start_skip}&categories={category}'
+            yield scrapy.Request(url=next_url, callback=self.parse, meta={'category': category, 'start_skip': start_skip})
 
         for product in products:
-            if not 'product_url' in product:
+            if 'product_url' not in product:
                 continue
 
             rpc = product['_id']
@@ -52,11 +53,7 @@ class LifepharmacySpider(scrapy.Spider):
             full_product_url = f'https://www.lifepharmacy.com/{product_url}'
             title = product['title']
 
-            brand = product['brand']
-            if brand:
-                brand = brand['name']
-            else:
-                brand = 'no brand'
+            brand = product['brand']['name'] if product.get('brand') else 'no brand'
 
             section = []
             for category in product['categories']:
@@ -86,11 +83,10 @@ class LifepharmacySpider(scrapy.Spider):
                 product_count = 0
 
             assets = {}
-            images = product['images']
-            if images:
-                assets['main_image'] = images['featured_image']
-                assets['set_images'] = []
-                for image in images['gallery_images']:
+            assets['main_image'] = product['images']['featured_image']
+            assets['set_images'] = []
+            if 'gallery_images' in product['images']:
+                for image in product['images']['gallery_images']:
                     assets['set_images'].append(image['full'])
 
             description = product['description']
@@ -102,6 +98,8 @@ class LifepharmacySpider(scrapy.Spider):
             need_prescription = product.get('type', '')
             rating = product['rating']
             maximum_salable_qty = product['maximum_salable_qty']
+
+
 
             yield {
                 'timestamp': datetime.now(),
